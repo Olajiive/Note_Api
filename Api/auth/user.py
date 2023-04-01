@@ -7,7 +7,9 @@ from datetime import timedelta
 from ..blocklist import BLOCKLIST
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, get_jti, jwt_required
 
-auth_namespace=Namespace("auth", description="authentication and authorization of a user to be able to create a Note")
+auth_namespace=Namespace("auth",
+                         description="authentication and authorization of a user to be able to create a Note"
+                         )
 
 signup_model = auth_namespace.model(
     "Signup", {
@@ -27,11 +29,22 @@ login_model = auth_namespace.model(
     }
 )
 
+user_model = auth_namespace.model(
+    'User', {
+        "id":fields.String(required=True, description="a user's id"),
+        "firstname":fields.String(required=True, description="a user's firstname"),
+        "lastname":fields.String(required=True, description="a user's lastname"),
+        "email":fields.String(required=True, description="a user's email"),
+    }
+)
+
+# auth_namespace.add_model("Signup", signup_model)
+
 @auth_namespace.route("/signup")
 class Signup(Resource):
     @auth_namespace.doc(description="Signup a user", summary="Signup a new user and add and commit the user into the database")
-    @auth_namespace.expect("signup_model")
-    @auth_namespace.marshal_with("signup_model")
+    @auth_namespace.expect(signup_model)
+    @auth_namespace.marshal_with(user_model)
     def post(self):
         data=request.get_json()
         user=User.query.filter_by(email=data.get("email")).first()
@@ -40,9 +53,9 @@ class Signup(Resource):
             abort(409, message="User with that details already exist")
 
         password_hash=generate_password_hash(data.get("password_hash"))
-        new_user=User(firstname=data.get("firstname"), 
-                      lastname=data.get("lastname"), 
-                      email=data.get("email"), 
+        new_user=User(firstname=data.get("firstname"),
+                      lastname=data.get("lastname"),
+                      email=data.get("email"),
                       password_hash=password_hash)
 
         new_user.save()
