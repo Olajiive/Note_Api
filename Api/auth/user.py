@@ -30,8 +30,8 @@ login_model = auth_namespace.model(
 @auth_namespace.route("/signup")
 class Signup(Resource):
     @auth_namespace.doc(description="Signup a user", summary="Signup a new user and add and commit the user into the database")
-    @auth_namespace.expect("signup_model")
-    @auth_namespace.marshal_with("signup_model")
+    @auth_namespace.expect(signup_model)
+    @auth_namespace.marshal_with(signup_model)
     def post(self):
         data=request.get_json()
         user=User.query.filter_by(email=data.get("email")).first()
@@ -40,9 +40,9 @@ class Signup(Resource):
             abort(409, message="User with that details already exist")
 
         password_hash=generate_password_hash(data.get("password_hash"))
-        new_user=User(firstname=data.get("firstname"), 
-                      lastname=data.get("lastname"), 
-                      email=data.get("email"), 
+        new_user=User(firstname=data.get("firstname"),
+                      lastname=data.get("lastname"),
+                      email=data.get("email"),
                       password_hash=password_hash)
 
         new_user.save()
