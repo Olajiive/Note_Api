@@ -4,8 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from http import HTTPStatus
 from flask import request
 from datetime import timedelta
-from ..blocklist import BLOCKLIST
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, get_jti, jwt_required
+from ..utils import db
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, get_jti, jwt_required, unset_jwt_cookies
 
 auth_namespace=Namespace("auth", description="authentication and authorization of a user to be able to create a Note")
 
@@ -39,11 +39,11 @@ class Signup(Resource):
         if user:
             abort(409, message="User with that details already exist")
 
-        password_hash=generate_password_hash(data.get("password_hash"))
+        
         new_user=User(firstname=data.get("firstname"),
                       lastname=data.get("lastname"),
                       email=data.get("email"),
-                      password_hash=password_hash)
+                      password_hash=generate_password_hash(data.get("password_hash")))
 
         new_user.save()
 
@@ -52,8 +52,7 @@ class Signup(Resource):
 @auth_namespace.route("/login")
 class Login(Resource):
     @auth_namespace.doc(description="Login a user", summary="Login an already existing user who gets an access token and a refresh token")
-    @auth_namespace.expect("login_model")
-    #@auth_namespace.marshal_with("login_model")
+    @auth_namespace.expect(login_model)
     def post(self):
         data=request.get_json()
         user =User.query.filter_by(email=data.get("email")).first()
@@ -78,14 +77,13 @@ class Login(Resource):
 
 
 @auth_namespace.route('/refresh')
-class TokenRefresh(Resource):
+class Refresh(Resource):
     @auth_namespace.doc(description="Refresh an access token", summary="Refresh an access token using a refresh token")
     @jwt_required(refresh=True)
     def post(self):
-        current_user=get_jwt_identity
+        username=get_jwt_identity
 
-        new_token=create_access_token(identity=current_user)
-
+        new_token=create_access_token(identity=username)
         return {"access_token": new_token}, HTTPStatus.OK
         
 
@@ -96,8 +94,9 @@ class Logout(Resource):
     @auth_namespace.doc(description="Logout a user", summary="Logout a registered user out of his account")
     @jwt_required()
     def post(self):
-        jti = get_jti()["jwt"]
-        BLOCKLIST.add(jti)
+
+        unset_jwt_cookies
+        db.session.commit()
 
         return {"message": "User has been successfully logged out"}, HTTPStatus.OK
 
