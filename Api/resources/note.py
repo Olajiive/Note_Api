@@ -32,6 +32,7 @@ class NotesGetCreate(Resource):
     @jwt_required()
     def post(self):
         data = note_namespace.payload
+
         user= User.query.filter_by(email=data.get("email"))
 
         if user:
@@ -44,6 +45,8 @@ class NotesGetCreate(Resource):
         else:
             return {"message": "Unregistered users cannot write a note"}, HTTPStatus.OK
         
+        
+       
 @note_namespace.route("/note/<int:note_id>")
 class GetUpdateDeleteNote(Resource):
     @note_namespace.doc(description='get note by ID ', summary="A registered user has the ability to get his created notes by ID")

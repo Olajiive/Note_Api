@@ -81,9 +81,9 @@ class Refresh(Resource):
     @auth_namespace.doc(description="Refresh an access token", summary="Refresh an access token using a refresh token")
     @jwt_required(refresh=True)
     def post(self):
-        username=get_jwt_identity
+        current_user=get_jwt_identity
 
-        new_token=create_access_token(identity=username)
+        new_token=create_access_token(current_user, expires_delta=timedelta(minutes=30))
         return {"access_token": new_token}, HTTPStatus.OK
         
 
